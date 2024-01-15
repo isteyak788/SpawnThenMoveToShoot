@@ -1,0 +1,66 @@
+using UnityEngine;
+using System.Collections;
+
+public class SpawnToMove : MonoBehaviour
+{
+    public GameObject[] objectArray;
+    public Transform spawnPoint;
+    public Transform movePoint;
+    public float moveSpeed = 5.0f;
+    public float throwSpeed = 10.0f; // New variable for throw speed
+    public KeyCode spawnKey = KeyCode.Mouse0; // Change this to the desired key
+
+    void Update()
+    {
+        if (Input.GetKeyDown(spawnKey))
+        {
+            SpawnMoveThrow();
+        }
+    }
+
+    void SpawnMoveThrow()
+    {
+        if (objectArray.Length == 0)
+        {
+            Debug.LogError("Object array is empty. Please assign objects in the inspector.");
+            return;
+        }
+
+        int randomIndex = Random.Range(0, objectArray.Length);
+        GameObject newObject = Instantiate(objectArray[randomIndex], spawnPoint.position, spawnPoint.rotation);
+
+        // Move the object from spawn point to move point
+        StartCoroutine(MoveObject(newObject));
+
+        // After moving, throw the object forward
+        Rigidbody rb = newObject.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            // Calculate the forward direction based on the camera's perspective
+            Vector3 throwDirection = Camera.main.transform.forward;
+            throwDirection.y = 0.0f; // Ensure it stays in the horizontal plane
+
+            // Apply velocity in the calculated direction with the throwSpeed
+            rb.velocity = throwDirection.normalized * throwSpeed;
+        }
+        else
+        {
+            Debug.LogError("The spawned object must have a Rigidbody component.");
+        }
+    }
+
+    IEnumerator MoveObject(GameObject obj)
+    {
+        float elapsedTime = 0f;
+
+        while (elapsedTime < 1f)
+        {
+            obj.transform.position = Vector3.Lerp(spawnPoint.position, movePoint.position, elapsedTime);
+            elapsedTime += Time.deltaTime * moveSpeed;
+            yield return null;
+        }
+
+        // Ensure the object reaches the move point
+        obj.transform.position = movePoint.position;
+    }
+}
